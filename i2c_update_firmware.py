@@ -119,8 +119,6 @@ def update_firmware(bus_number, firmware_path, slave_address, device_group, sens
                         # Send firmware
                         click.echo("Updating device with address: " + hex(i))
                         send_firmware(bus, i, firmware_content, file_size, restart_firmware) 
-            
-        
 
 if __name__ == '__main__':
     update_firmware()
