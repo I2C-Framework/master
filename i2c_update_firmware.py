@@ -8,8 +8,8 @@ MAGIC_NUMBER = 0x42
 FIRMWARE_REGISTER = 0xA0
 RANGE_MIN = 0x10
 RANGE_MAX = 0x78
-GROUP_REGISTER = 0xA5
-SENSORS_TYPE_REGISTER = 0xA6
+GROUP_REGISTER = 0xA3
+SENSORS_TYPE_REGISTER = 0xA4
 
 # Function to send message vy i2c
 def send_message(bus, address, register, length):

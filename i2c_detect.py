@@ -7,13 +7,12 @@ RANGE_MIN = 0x10
 RANGE_MAX = 0x78
 
 ID_REGISTER = 0xA1
-MAJOR_VERSION_REGISTER = 0xA2
-MINOR_VERSION_REGISTER = 0xA3
-FIX_VERSION_REGISTER = 0xA4
-GROUP_REGISTER = 0xA5
-SENSORS_TYPE_REGISTER = 0xA6
-NAME_REGISTER = 0xA7
+VERSION_HASH_REGISTER = 0xA2
+GROUP_REGISTER = 0xA3
+SENSORS_TYPE_REGISTER = 0xA4
+NAME_REGISTER = 0xA5
 
+# Function to get a register value as a string
 def get_string_register(bus, address, register, length):
     write = i2c_msg.write(address, [register])
     read = i2c_msg.read(address, length)
@@ -21,9 +20,8 @@ def get_string_register(bus, address, register, length):
     bytes_data = list(read)
     response_text = "".join(chr(byte) for byte in bytes_data)
     return response_text
-    
 
-# Function to send message i2c
+# Function to get a register value as an integer
 def get_int_register(bus, address, register, length):
     write = i2c_msg.write(address, [register])
     read = i2c_msg.read(address, length)
@@ -39,10 +37,10 @@ def get_int_register(bus, address, register, length):
 def detect(bus_number):
     """ Program to detect all I2C devices belonging to the I2C ecosystem """    
     bus = SMBus(bus_number)    
+    
+    counter = 1
 
-    print("#  uuid        i2c      firmware   group  type            name")
-    print("----------------------------------------------------------------")
-    counter = 0
+    data_array = []
 
     # Detect all devices
     for i in range(RANGE_MIN, RANGE_MAX):
@@ -56,16 +54,48 @@ def detect(bus_number):
 
         if(int.from_bytes(msg.buf[0], byteorder='little') == MAGIC_NUMBER):
             id = get_int_register(bus, i, ID_REGISTER, 4)
-            major_version = get_int_register(bus, i, MAJOR_VERSION_REGISTER, 1)
-            minor_version = get_int_register(bus, i, MINOR_VERSION_REGISTER, 1)
-            fix_version = get_int_register(bus, i, FIX_VERSION_REGISTER, 1)
+            version_hash = get_int_register(bus, i, VERSION_HASH_REGISTER, 32)
+            # Display only the first 8 hexadecimal characters of the hash
+            version_hash_short = hex(version_hash)[2:10]
             group = get_int_register(bus, i, GROUP_REGISTER, 1)
             sensors_type = get_string_register(bus, i, SENSORS_TYPE_REGISTER, 32)
             name = get_string_register(bus, i, NAME_REGISTER, 32)
+
+            data_array.append([str(counter) + ".", hex(id), hex(i), "0x" + version_hash_short, str(group), sensors_type, name])
             
             counter += 1
-            
-            print(str(counter) + ". " + hex(id) + "    " + hex(i) + "     " + str(major_version) + "." + str(minor_version) + "." + str(fix_version) + "      " + str(group) + "      " + sensors_type + "    " + name)
 
+    # Header of the table
+    array_header = ("#", "UUID", "I2C", "Firmware", "Group", "Type", "Name")
+
+    # Remove \x00 from data_array
+    data_array = [[element.replace('\x00', '') for element in line] for line in data_array]
+
+    # Find the maximum size of each column, including the length of the column title
+    column_max_size = [max(len(str(element)) for element in column + (array_header[i],)) for i, column in enumerate(zip(*data_array))]
+
+    # Add two spaces between each column
+    column_max_size = [element + 2 for element in column_max_size]
+
+    # Separator line
+    separator_line = "-" * (sum(column_max_size) + len(column_max_size) - 1)
+
+    print(separator_line)
+
+    # Header of the table
+    for i, header in enumerate(array_header):
+        print(f"{header:<{column_max_size[i]}}", end=" ")
+    print()
+
+    print(separator_line)
+
+    # Print the data
+    for line in data_array:
+        for i, element in enumerate(line):
+            print(f"{element:<{column_max_size[i]}}", end=" ")
+        print()
+
+
+    
 if __name__ == '__main__':
     detect()
