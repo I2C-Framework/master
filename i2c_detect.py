@@ -80,6 +80,10 @@ def detect(bus_number):
     # Separator line
     separator_line = "-" * (sum(column_max_size) + len(column_max_size) - 1)
 
+    if len(data_array) < 1:
+        print("No i2c devices compatible with the ecosystem detected")
+        return
+
     print(separator_line)
 
     # Header of the table
